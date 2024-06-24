@@ -1,113 +1,169 @@
+'use client'
 import Image from "next/image";
+import React from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+import { faCheck } from "@fortawesome/free-solid-svg-icons";
+import { luhn } from "./util/luhn";
 
 export default function Home() {
+  const [cardNumber, setCardNumber] = React.useState();
+  const [luhnResult, setLuhnResult] = React.useState("Hans Luhn's Checksum Algorithm");
+  const [verhoeffResult, setVerHoeffResult] = React.useState('Please input a 16-digit number');
+  const [dammResult, setDammResult] = React.useState('Please input a 16-digit number');
+  const [errorState, setErrorState] = React.useState(false);
+
+  function handleChange(e) {
+    const currentEntry = e.target.value;
+    const numericRegex = /^[0-9]*$/;
+    
+    if (currentEntry.length === 0 || !currentEntry) {
+      setErrorState(false);
+    }
+
+    if (!currentEntry.match(numericRegex)) {
+      setErrorState(true);
+    }
+
+    if (currentEntry.length >= 10) {
+      const luhnResults = luhn(currentEntry);
+
+      let luhnResult = false;
+      if (luhnResults.calculatedCheck === luhnResults.providedCheck) {
+        luhnResult = true;
+      }
+      if (luhnResult) {
+        setLuhnResult(
+          <div className='mr-4'>
+            <FontAwesomeIcon icon={faCheck} style={{color: "#1f8c3a", marginRight: '8px'}} ></FontAwesomeIcon>
+            Validation Succeeded
+            <div className='flex flex-col justify-start mt-1'>
+              <div className='text-sm font-extralight'>Provided Check: {luhnResults.providedCheck}</div>
+              <div className='text-sm font-extralight'>Calculated Check: {luhnResults.calculatedCheck}</div>
+            </div>
+          </div>
+        );
+      } 
+      else {
+        setLuhnResult(
+          <div className='mr-4'>
+            <FontAwesomeIcon icon={faExclamationCircle} style={{color: "#c40202", marginRight: '8px'}} ></FontAwesomeIcon>
+            Validation Failed
+            <div className='flex flex-col justify-start mt-1'>
+              <div className='text-sm font-extralight'>Provided Check: {luhnResults.providedCheck ?? 'N/A'}</div>
+              <div className='text-sm font-extralight'>Calculated Check: {luhnResults.calculatedCheck ?? 'N/A'}</div>
+            </div>
+          </div>
+        );
+      }
+    } else {
+      setLuhnResult('Please input a 16-digit number');
+    }
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className="flex min-h-screen flex-col items-center justify-between p-12">
+      <div className="flex flex-col items-center justify-between p-4">
+        <h1 className="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white">Digit Checker</h1>
+        <h2 className="mb-4 font-bold leading-none tracking-tight text-gray-600 md:text-xl lg:text-2xl dark:text-white">Validate and check card numbers before hitting the BIN network</h2>
+        <div className="w-3/4">
+          {
+            !errorState ?
+            <input 
+              className="px-7 py-3 mb-4 text-xl font-bold rounded-lg border bg-[#ffffff] text-[#444444] focus:outline-[#aaaaaa] border-[#bdbcbc] w-full text-center"
+              inputmode="numeric" 
+              pattern="[0-9]*" 
+              placeholder="Card Number"
+              onChange={handleChange}
+              maxLength={16}
+            >
+            </input> :
+            <input 
+              className="px-7 py-3 mb-4 text-xl font-bold rounded-lg border bg-[#fcc4c4] text-[#444444] focus:outline-[#8c4e4e] border-[#8c4e4e] w-full text-center"
+              inputmode="numeric" 
+              pattern="[0-9]*" 
+              placeholder="Card Number"
+              onChange={handleChange}
+              maxLength={16}
+            >
+            </input>
+          }
         </div>
+        <div className="flex flex-row justify-center space-x-4 mb-4">
+          <div className="flex flex-col rounded-2xl w-1/4 bg-[#ffffff] shadow-xl">
+            <figure className="flex justify-center items-center rounded-t-2xl bg-[#f6ae84] h-1/3 bg-gradient-to-r from-slate-200">
+                <img src="/abacus.svg" alt="Card Preview" className="rounded-t-2xl w-1/2 h-1/2 text-white drop-shadow-xl"></img>
+            </figure>
+            <div className="flex flex-col p-8">
+                <div className="text-2xl font-bold   text-[#374151] pb-6">Luhn Check</div>
+                <div className="font-bold text-xl   text-[#374151]"></div>
+                <div className="flex justify-end pt-6">
+                    <button className="bg-[#c6a067] text-[#ffffff]  font-bold text-base  p-3 rounded-lg hover:bg-purple-800 active:scale-95 transition-transform transform">Learn More (MII)</button>
+                </div>
+            </div>
+          </div>
+          <div className="flex flex-col rounded-2xl w-1/4 bg-[#ffffff] shadow-xl">
+            <figure className="flex justify-center items-center rounded-t-2xl bg-[#8bf6df] h-1/3 bg-gradient-to-r from-slate-200">
+                <img src="/industry.svg" alt="Card Preview" className="rounded-t-2xl w-96 text-white drop-shadow-xl"></img>
+            </figure>
+            <div className="flex flex-col p-8">
+                <div className="text-2xl font-bold md:text-md  text-[#374151] pb-6">Major Industry Identifier</div>
+                <div className="font-bold text-xl   text-[#374151]"></div>
+                <div className="flex justify-end pt-6">
+                    <button className="bg-[#63bec4] text-[#ffffff]  font-bold text-base  p-3 rounded-lg hover:bg-purple-800 active:scale-95 transition-transform transform">Learn More (MII)</button>
+                </div>
+            </div>
+          </div>
+          <div className="flex flex-col rounded-2xl w-1/4 bg-[#ffffff] shadow-xl">
+            <figure className="flex justify-center items-center rounded-t-2xl bg-[#a68bff] h-1/3 bg-gradient-to-r from-slate-200">
+                <img src="/wallet.svg" alt="Card Preview" className="rounded-t-2xl w-1/2 h-1/2 text-white drop-shadow-xl"></img>
+            </figure>
+            <div className="flex flex-col p-8">
+                <div className="text-2xl font-bold   text-[#374151] pb-6">Account Insights</div>
+                <div className="font-bold text-xl   text-[#374151]"></div>
+                <div className="flex justify-end pt-6">
+                    <button className="bg-[#773fa9] text-[#ffffff]  font-bold text-base  p-3 rounded-lg hover:bg-purple-800 active:scale-95 transition-transform transform">Learn More (MII)</button>
+                </div>
+            </div>
+          </div>
+          {/* <div className="flex flex-col rounded-2xl w-96 bg-[#ffffff] shadow-xl border-2 border-solid border-[#bdbcbc]">
+              <div className="flex flex-col p-8">
+                  <div className="text-2xl font-bold   text-[#374151] pb-2">Luhn Algorithm</div>
+                  <div className=" text-xl font-light  text-[#374151]">{luhnResult}</div>
+              </div>
+          </div>
+          <div className="flex flex-col rounded-2xl w-96 bg-[#ffffff] shadow-xl border-2 border-solid border-[#bdbcbc]">
+              <div className="flex flex-col p-8">
+                  <div className="text-2xl font-bold   text-[#374151] pb-2">Verhoeff Algorithm</div>
+                  <div className=" text-xl  font-light text-[#374151]">{verhoeffResult}</div>
+              </div>
+          </div>
+          <div className="flex flex-col rounded-2xl w-96 bg-[#ffffff] shadow-xl border-2 border-solid border-[#bdbcbc]">
+              <div className="flex flex-col p-8">
+                  <div className="text-2xl font-bold   text-[#374151] pb-2">Damm Algorithm</div>
+                  <div className=" text-xl font-light  text-[#374151]">{dammResult}</div>
+              </div>
+          </div> */}
+        </div>
+        
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      <footer className="bg-white rounded-lg shadow m-4 dark:bg-gray-800">
+        <div className="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
+          <span className="mr-4 text-sm text-gray-500 sm:text-center dark:text-gray-400">© 2024 <a href="https://flowbite.com/" className="hover:underline">Graham Burleigh</a>. All Rights Reserved.
+        </span>
+        <ul className="flex flex-wrap items-center mt-3 text-sm font-medium text-gray-500 dark:text-gray-400 sm:mt-0">
+            <li>
+                <a href="/about" className="hover:underline me-4 md:me-6">About</a>
+            </li>
+            <li>
+                <a href="/disclaimers" className="hover:underline me-4 md:me-6">Disclaimers</a>
+            </li>
+            <li>
+                <a href="/contact" className="hover:underline">Contact</a>
+            </li>
+        </ul>
+        </div>
+    </footer>
     </main>
   );
 }
